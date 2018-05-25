@@ -35,12 +35,19 @@ PyObject *js_function_call(js_function *self, PyObject *args, PyObject *kwargs) 
         js_this = self->js_this.Get(isolate);
     }
     int argc = PyTuple_GET_SIZE(args);
-    Local<Value> *argv = new Local<Value>[argc];
-    jss_from_pys(args, argv, context);
+    MaybeLocal<Value> result;
 
     if (!context_setup_timeout(context)) return NULL;
-    MaybeLocal<Value> result = object->CallAsFunction(context, js_this, argc, argv);
-    delete[] argv;
+    if (argc <= 16) {
+        Local<Value> argv[argc];
+        jss_from_pys(args, argv, context);
+        result = object->CallAsFunction(context, js_this, argc, argv);
+    } else {
+        Local<Value> *argv = new Local<Value>[argc];
+        jss_from_pys(args, argv, context);
+        result = object->CallAsFunction(context, js_this, argc, argv);
+        delete[] argv;
+    }
     if (!context_cleanup_timeout(context)) return NULL;
     PY_PROPAGATE_JS;
     return py_from_js(result.ToLocalChecked(), context);
