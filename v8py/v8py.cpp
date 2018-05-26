@@ -78,14 +78,23 @@ PyObject *construct_new_object(PyObject *self, PyObject *args) {
     // exclude first argument
     argc--;
 
-    Local<Value> *argv = new Local<Value>[argc];
-    for (long i = 0; i < argc; i++) {
-        argv[i] = js_from_py(PyTuple_GET_ITEM(args, i + 1), context);
+    if (!context_setup_timeout(context)) return NULL;
+    MaybeLocal<Value> result;
+    if (argc <= 16) {
+        Local<Value> argv[argc];
+        for (long i = 0; i < argc; i++) {
+            argv[i] = js_from_py(PyTuple_GET_ITEM(args, i + 1), context);
+        }
+        result = object->CallAsConstructor(argc, argv);
+    } else {
+        Local<Value> *argv = new Local<Value>[argc];
+        for (long i = 0; i < argc; i++) {
+            argv[i] = js_from_py(PyTuple_GET_ITEM(args, i + 1), context);
+        }
+        result = object->CallAsConstructor(argc, argv);
+        delete[] argv;
     }
 
-    if (!context_setup_timeout(context)) return NULL;
-    MaybeLocal<Value> result = object->CallAsConstructor(argc, argv);
-    delete[] argv;
     if (!context_cleanup_timeout(context)) return NULL;
 
     PY_PROPAGATE_JS;
