@@ -340,6 +340,7 @@ void context_dealloc(context_c *self) {
     self->js_context.Reset();
     self->promise_fulfilled.Reset();
     self->promise_rejected.Reset();
+    self->bind_function.Reset();
     Py_DECREF(self->js_object_cache);
     Py_DECREF(self->scripts);
     Py_TYPE(self)->tp_free((PyObject *) self);
